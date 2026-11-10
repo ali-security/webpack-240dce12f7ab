@@ -104,6 +104,7 @@ describe("HttpUriPlugin", () => {
 	let internalServer;
 	let allowedOrigin;
 	let internalOrigin;
+	let internalHost;
 	let internalRequests = 0;
 	let privateRequests = 0;
 	let loopRequests = 0;
@@ -115,6 +116,7 @@ describe("HttpUriPlugin", () => {
 			res.end('export default "internal-secret";');
 		});
 		internalOrigin = getOrigin(internalServer);
+		internalHost = `127.0.0.1:${internalServer.address().port}`;
 
 		allowedServer = await startServer((req, res) => {
 			const redirect = location => {
@@ -134,6 +136,9 @@ describe("HttpUriPlugin", () => {
 				redirect("/private/secret.js");
 			} else if (req.url === "/public/protocol-redirect") {
 				redirect("file:///etc/hosts");
+			} else if (req.url === "/public/userinfo-redirect") {
+				// userinfo mimics the allowed origin, the real host is the internal server
+				redirect(`${allowedOrigin}@${internalHost}/secret.js`);
 			} else if (req.url === "/private/secret.js") {
 				privateRequests++;
 				res.setHeader("Content-Type", "text/javascript");
@@ -226,6 +231,43 @@ describe("HttpUriPlugin", () => {
 		expect(errors).toMatch(/Too many redirects/);
 		// the initial request plus 5 followed redirects
 		expect(loopRequests).toBe(6);
+		expect(lockfile).toBeUndefined();
+	});
+
+	it("should allow URLs under an allowed origin without a trailing slash", async () => {
+		const { errors, lockfile } = await compile(
+			"origin-without-trailing-slash",
+			`${allowedOrigin}/public/module.js`,
+			[allowedOrigin]
+		);
+		expect(errors).toBe("");
+		expect(lockfile).toContain(
+			JSON.stringify(`${allowedOrigin}/public/module.js`)
+		);
+	});
+
+	it("should not fetch a URL whose userinfo mimics an allowed origin", async () => {
+		const request = `${allowedOrigin}@${internalHost}/secret.js`;
+		const { errors, lockfile } = await compile("userinfo-bypass", request, [
+			allowedOrigin
+		]);
+		expect(errors).toMatch(/doesn't match the allowedUris policy/);
+		expect(errors).toContain(request);
+		expect(internalRequests).toBe(0);
+		expect(lockfile).toBeUndefined();
+	});
+
+	it("should not follow a redirect to a URL whose userinfo mimics an allowed origin", async () => {
+		const { errors, lockfile } = await compile(
+			"userinfo-redirect",
+			`${allowedOrigin}/public/userinfo-redirect`,
+			[allowedOrigin]
+		);
+		expect(errors).toMatch(
+			/doesn't match the allowedUris policy after redirect/
+		);
+		expect(errors).toContain(`${allowedOrigin}@${internalHost}/secret.js`);
+		expect(internalRequests).toBe(0);
 		expect(lockfile).toBeUndefined();
 	});
 });
