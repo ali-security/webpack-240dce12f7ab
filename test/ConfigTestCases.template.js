@@ -705,7 +705,7 @@ const describeCases = config => {
 							} else {
 								require("..")(options, onCompiled);
 							}
-						}, 30000);
+						}, 60000);
 
 						const {
 							it: _it,

@@ -7,8 +7,8 @@ import redirect1 from "http://localhost:9990/redirect";
 import redirect2 from "http://localhost:9990/redirect.js";
 import text from "http://localhost:9990/asset.txt";
 import textUrl from "http://localhost:9990/url.js";
-import codeOfConduct1 from "https://raw.githubusercontent.com//webpack//webpack//main/CODE_OF_CONDUCT.md";
-import codeOfConduct2 from "https://raw.githubusercontent.com/webpack/webpack/main/CODE_OF_CONDUCT.md";
+import codeOfConduct1 from "https://raw.githubusercontent.com//webpack//webpack//v5.91.0/CODE_OF_CONDUCT.md";
+import codeOfConduct2 from "https://raw.githubusercontent.com/webpack/webpack/v5.91.0/CODE_OF_CONDUCT.md";
 
 it("http url request should be supported", () => {
 	expect(cssContent).toBe("a {}.webpack{}");
